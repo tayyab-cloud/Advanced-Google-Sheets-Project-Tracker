@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <style>
+      body { font-family: Arial, sans-serif; margin: 20px; }
+      .form-group { margin-bottom: 15px; }
+      label { display: block; margin-bottom: 5px; font-weight: bold; }
+      input[type="text"], input[type="date"], input[type="email"], textarea { width: 95%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+      textarea { resize: vertical; height: 60px; }
+      button { background-color: #4CAF50; color: white; padding: 10px 15px; border: none; cursor: pointer; border-radius: 4px; }
+      button:hover { background-color: #45a049; }
+      #status { margin-top: 15px; font-weight: bold; }
+    </style>
+  </head>
+  <body>
+    <h3>Add New Team Member</h3>
+    <form id="assignee-form">
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" id="name" required>
+      </div>
+
+      <!-- ================== NEW EMAIL FIELD ================== -->
+      <div class="form-group">
+        <label for="email">Email Address</label>
+        <input type="email" id="email" required>
+      </div>
+      <!-- ===================================================== -->
+
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <input type="date" id="dob" required>
+      </div>
+       <div class="form-group">
+        <label for="address">Address</label>
+        <textarea id="address" required></textarea>
+      </div>
+      <button type="submit">Add Assignee</button>
+    </form>
+    <div id="status"></div>
+
+    <script>
+      document.getElementById("assignee-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        this.querySelector("button").disabled = true;
+        document.getElementById("status").textContent = "Adding...";
+
+        const formData = {
+          name: document.getElementById("name").value,
+          email: document.getElementById("email").value, // <-- Add email to the data object
+          dob: document.getElementById("dob").value,
+          address: document.getElementById("address").value
+        };
+
+        google.script.run
+          .withSuccessHandler(onSuccess)
+          .withFailureHandler(onFailure)
+          .addNewAssignee(formData);
+      });
+
+      function onSuccess(message) {
+        document.getElementById("status").style.color = "green";
+        document.getElementById("status").textContent = message;
+        document.getElementById("assignee-form").reset();
+        document.getElementById("assignee-form").querySelector("button").disabled = false;
+        
+        setTimeout(function() { google.script.host.close(); }, 2000);
+      }
+
+      function onFailure(error) {
+        document.getElementById("status").style.color = "red";
+        document.getElementById("status").textContent = "Error: " + error.message;
+        document.getElementById("assignee-form").querySelector("button").disabled = false;
+      }
+    </script>
+  </body>
+</html>
