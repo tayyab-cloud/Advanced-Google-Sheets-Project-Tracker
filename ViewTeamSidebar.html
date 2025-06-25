@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+      .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .btn-group .btn {
+        margin-left: 5px;
+      }
+      #status { margin-top: 15px; font-weight: bold; }
+    </style>
+  </head>
+  <body class="p-3">
+    <h4>Team Members</h4>
+    <div id="status">Loading...</div>
+    <ul class="list-group" id="team-list">
+      <!-- Team members will be loaded here -->
+    </ul>
+
+    <script>
+  // This function is defined globally so it can be called to refresh the list.
+  function loadTeamData() {
+    document.getElementById("status").textContent = "Loading...";
+    document.getElementById("team-list").innerHTML = ""; // Clear list immediately
+    google.script.run.withSuccessHandler(populateTeamList).getTeamDetails();
+  }
+
+  function populateTeamList(teamMembers) {
+    const listElement = document.getElementById("team-list");
+    document.getElementById("status").textContent = ""; // Clear loading message
+
+    if (!teamMembers || teamMembers.length === 0) {
+      document.getElementById("status").textContent = "No team members found.";
+      return;
+    }
+
+    teamMembers.forEach(member => {
+      const li = document.createElement("li");
+      li.className = "list-group-item";
+      
+      const memberInfo = document.createElement("span");
+      memberInfo.innerHTML = `<strong>${member.name}</strong><br><small>${member.email}</small>`;
+      
+      const buttonGroup = document.createElement("div");
+      buttonGroup.className = "btn-group";
+
+      const editButton = document.createElement("button");
+      editButton.className = "btn btn-sm btn-primary edit-btn";
+      editButton.textContent = "Edit";
+      editButton.dataset.id = member.id;
+
+      const deleteButton = document.createElement("button");
+      deleteButton.className = "btn btn-sm btn-danger delete-btn";
+      deleteButton.textContent = "Delete";
+      deleteButton.dataset.id = member.id;
+
+      buttonGroup.appendChild(editButton);
+      buttonGroup.appendChild(deleteButton);
+      
+      li.appendChild(memberInfo);
+      li.appendChild(buttonGroup);
+      listElement.appendChild(li);
+    });
+  }
+  
+  // Event listener for all button clicks inside the list.
+  document.getElementById("team-list").addEventListener("click", function(e) {
+    const statusDiv = document.getElementById("status");
+    
+    // Handle Edit Button Click
+    if (e.target && e.target.classList.contains('edit-btn')) {
+      const assigneeId = e.target.dataset.id;
+      statusDiv.textContent = "Opening editor...";
+      google.script.run
+        .withSuccessHandler(() => loadTeamData()) // Refresh list after dialog closes
+        .openEditAssigneeDialog(assigneeId);
+    }
+
+    // Handle Delete Button Click
+    if (e.target && e.target.classList.contains('delete-btn')) {
+      const assigneeId = e.target.dataset.id;
+      
+      statusDiv.textContent = `Processing delete request...`;
+      e.target.disabled = true; // Disable button to prevent multiple clicks
+      
+      google.script.run
+        .withSuccessHandler(function(response) {
+          statusDiv.style.color = "green";
+          statusDiv.textContent = response;
+          loadTeamData(); // Refresh the list on success
+        })
+        .withFailureHandler(function(error) {
+          // Check for the "safe" cancellation error
+          if (error.message === "Deletion cancelled by user.") {
+            statusDiv.style.color = "black";
+            statusDiv.textContent = "Delete operation was cancelled.";
+          } else {
+            statusDiv.style.color = "red";
+            statusDiv.textContent = "Error: " + error.message;
+          }
+          e.target.disabled = false; // Re-enable button on failure or cancellation
+        })
+        .deleteAssignee(assigneeId);
+    }
+  });
+  
+  // Initial load when the sidebar opens.
+  document.addEventListener("DOMContentLoaded", loadTeamData);
+</script>
+  </body>
+</html>
