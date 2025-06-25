@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+      body { font-size: 14px; }
+      .btn-block { margin-top: 10px; }
+      #status { margin-top: 15px; font-weight: bold; }
+    </style>
+  </head>
+  <body class="p-3">
+    <h5>Search & Filter</h5>
+    <form id="search-form">
+      <div class="form-group">
+        <label for="keyword">Keyword in Title</label>
+        <input type="text" class="form-control" id="keyword" placeholder="e.g., login page">
+      </div>
+      <div class="form-group">
+        <label for="assignee">Assignee</label>
+        <select class="form-control" id="assignee">
+          <!-- Populated by script -->
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="status-filter">Status</label>
+        <select class="form-control" id="status-filter">
+          <option value="">Any</option>
+          <option>To Do</option>
+          <option>In Progress</option>
+          <option>Done</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="priority">Priority</label>
+        <select class="form-control" id="priority">
+          <option value="">Any</option>
+          <option>High</option>
+          <option>Medium</option>
+          <option>Low</option>
+        </select>
+      </div>
+      <div class="form-check">
+        <input type="checkbox" class="form-check-input" id="includeArchived">
+        <label class="form-check-label" for="includeArchived">Include Archived Tasks</label>
+      </div>
+      
+      <button type="submit" class="btn btn-primary btn-block">Search</button>
+      <button type="button" class="btn btn-secondary btn-block" id="resetBtn">Reset Filters</button>
+    </form>
+    <div id="status"></div>
+
+    <script>
+      // Load assignees into the dropdown when the sidebar opens
+      document.addEventListener("DOMContentLoaded", function() {
+        google.script.run.withSuccessHandler(populateAssignees).getAssigneeList();
+      });
+
+      function populateAssignees(assignees) {
+        const selectElement = document.getElementById("assignee");
+        selectElement.innerHTML = '<option value="">Any</option>'; // Add "Any" option
+        if (assignees && assignees.length > 0) {
+          assignees.forEach(function(assignee) {
+            const option = document.createElement("option");
+            option.value = `${assignee.name}|||${assignee.email}`; 
+            option.textContent = `${assignee.name} (${assignee.email})`;
+            selectElement.appendChild(option);
+          });
+        }
+      }
+
+      // Handle the Search button click
+      document.getElementById("search-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = "Searching...";
+        this.querySelector('button[type="submit"]').disabled = true;
+
+        const filters = {
+          keyword: document.getElementById("keyword").value,
+          assignee: document.getElementById("assignee").value,
+          status: document.getElementById("status-filter").value,
+          priority: document.getElementById("priority").value,
+          includeArchived: document.getElementById("includeArchived").checked
+        };
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            statusDiv.textContent = response;
+            document.querySelector('button[type="submit"]').disabled = false;
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.textContent = "Error: " + error.message;
+            document.querySelector('button[type="submit"]').disabled = false;
+          })
+          .filterTasks(filters);
+      });
+
+      // Handle the Reset button click
+      document.getElementById("resetBtn").addEventListener("click", function() {
+        const statusDiv = document.getElementById("status");
+        statusDiv.textContent = "Resetting...";
+        google.script.run.withSuccessHandler(function(response) {
+            document.getElementById("search-form").reset();
+            statusDiv.textContent = response;
+          }).resetFilters();
+      });
+    </script>
+  </body>
+</html>
