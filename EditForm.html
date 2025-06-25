@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  </head>
+  <body class="p-3">
+    <h4>Edit Task</h4>
+    <input type="hidden" id="row" value="<?= task.row ?>">
+    <div class="form-group">
+      <label>Task ID</label>
+      <input type="text" class="form-control" value="<?= task.id ?>" readonly>
+    </div>
+    <div class="form-group">
+      <label for="title">Task Title</label>
+      <input type="text" class="form-control" id="title" value="<?= task.title ?>">
+    </div>
+    <div class="form-group">
+      <label for="assignee">Assignee</label>
+      <input type="text" class="form-control" id="assignee" value="<?= task.assignee ?>">
+    </div>
+    <div class="form-group">
+      <label for="priority">Priority</label>
+      <select class="form-control" id="priority">
+        <option <?= task.priority == 'Low' ? 'selected' : '' ?>>Low</option>
+        <option <?= task.priority == 'Medium' ? 'selected' : '' ?>>Medium</option>
+        <option <?= task.priority == 'High' ? 'selected' : '' ?>>High</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="status">Status</label>
+      <select class="form-control" id="status">
+        <option <?= task.status == 'To Do' ? 'selected' : '' ?>>To Do</option>
+        <option <?= task.status == 'In Progress' ? 'selected' : '' ?>>In Progress</option>
+        <option <?= task.status == 'Done' ? 'selected' : '' ?>>Done</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="dueDate">Due Date</label>
+      <input type="date" class="form-control" id="dueDate" value="<?= Utilities.formatDate(new Date(task.dueDate), "GMT", "yyyy-MM-dd") ?>">
+    </div>
+    <button class="btn btn-success" id="updateBtn">Update Task</button>
+    <button class="btn btn-secondary" onclick="google.script.host.close()">Cancel</button>
+    <script>
+      document.getElementById("updateBtn").addEventListener("click", function() {
+        const formData = {
+          row: document.getElementById("row").value,
+          title: document.getElementById("title").value,
+          assignee: document.getElementById("assignee").value,
+          priority: document.getElementById("priority").value,
+          status: document.getElementById("status").value,
+          dueDate: document.getElementById("dueDate").value,
+        };
+        this.disabled = true;
+        this.textContent = 'Updating...';
+        google.script.run
+          .withSuccessHandler(msg => { alert(msg); google.script.host.close(); })
+          .updateTaskOnSheet(formData);
+      });
+    </script>
+  </body>
+</html>
