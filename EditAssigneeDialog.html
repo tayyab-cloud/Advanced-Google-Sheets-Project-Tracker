@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  </head>
+  <body class="p-3">
+    <h4>Edit Team Member</h4>
+    <form id="edit-form">
+      <!-- Use templating to pre-fill the form with existing data -->
+      <input type="hidden" id="assigneeId" value="<?= assignee.id ?>">
+      
+      <div class="form-group">
+        <label for="name">Full Name</label>
+        <input type="text" class="form-control" id="name" value="<?= assignee.name ?>" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email Address (Read-only)</label>
+        <input type="email" class="form-control" id="email" value="<?= assignee.email ?>" readonly>
+      </div>
+
+      <div class="form-group">
+        <label for="dob">Date of Birth</label>
+        <!-- The date needs special formatting to work in an input -->
+        <input type="date" class="form-control" id="dob" value="<?= assignee.dob ?>" required>
+      </div>
+
+      <div class="form-group">
+        <label for="address">Address</label>
+        <textarea class="form-control" id="address" required><?= assignee.address ?></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-success">Save Changes</button>
+    </form>
+    <div id="status" class="mt-2 font-weight-bold"></div>
+
+    <script>
+      document.getElementById("edit-form").addEventListener("submit", function(e) {
+        e.preventDefault();
+        const button = this.querySelector("button");
+        button.disabled = true;
+        document.getElementById("status").textContent = "Saving...";
+
+        const updatedData = {
+          id: document.getElementById("assigneeId").value,
+          name: document.getElementById("name").value,
+          dob: document.getElementById("dob").value,
+          address: document.getElementById("address").value
+        };
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            document.getElementById("status").style.color = "green";
+            document.getElementById("status").textContent = response;
+            setTimeout(function() { google.script.host.close(); }, 1500);
+          })
+          .withFailureHandler(function(error) {
+            document.getElementById("status").style.color = "red";
+            document.getElementById("status").textContent = "Error: " + error.message;
+            button.disabled = false;
+          })
+          .updateAssigneeDetails(updatedData);
+      });
+    </script>
+  </body>
+</html>
