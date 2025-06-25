@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <!-- Using Bootstrap for better styling -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <style>
+      /* Optional: To make the status message stand out */
+      #status-message {
+        font-weight: bold;
+        margin-top: 15px;
+      }
+    </style>
+  </head>
+  <body class="p-3">
+    <h4>Add New Task</h4>
+    
+    <!-- CRITICAL: The <form> tag with the correct ID is required for the script to work. -->
+    <form id="task-form">
+    
+      <div class="form-group">
+        <label for="title">Task Title</label>
+        <input type="text" class="form-control" id="title" required>
+      </div>
+
+      <div class="form-group">
+        <label for="assignee">Assignee</label>
+        <select id="assignee" class="form-control" required>
+          <option value="" disabled selected>Loading team...</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="priority">Priority</label>
+        <select class="form-control" id="priority">
+          <option>Low</option>
+          <option>Medium</option>
+          <option>High</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="status">Status</label>
+        <select class="form-control" id="status">
+          <option>To Do</option>
+          <option>In Progress</option>
+          <option>Done</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="dueDate">Due Date</label>
+        <input type="date" class="form-control" id="dueDate" required>
+      </div>
+      
+      <!-- CRITICAL: The button must be type="submit" to trigger the form's 'submit' event. -->
+      <button type="submit" class="btn btn-primary" id="addTaskBtn">Add Task</button>
+
+    </form> <!-- End of the form tag -->
+
+    <!-- CRITICAL: This div is where the success/error messages will be displayed. -->
+    <div id="status-message"></div>
+
+    <script>
+      // This function runs when the sidebar loads to populate the assignee dropdown.
+      document.addEventListener("DOMContentLoaded", function() {
+        google.script.run.withSuccessHandler(populateAssignees).getAssigneeList();
+      });
+
+      function populateAssignees(assignees) {
+        const selectElement = document.getElementById("assignee");
+        selectElement.innerHTML = ''; 
+
+        if (assignees && assignees.length > 0) {
+          selectElement.innerHTML = '<option value="" disabled selected>Select an assignee</option>';
+          assignees.forEach(function(assignee) {
+            const option = document.createElement("option");
+            option.value = `${assignee.name}|||${assignee.email}`; 
+            option.textContent = `${assignee.name} (${assignee.email})`;
+            selectElement.appendChild(option);
+          });
+        } else {
+          selectElement.innerHTML = '<option value="" disabled>No team members found</option>';
+        }
+      }
+
+      // This function runs when the form is submitted.
+      document.getElementById("task-form").addEventListener("submit", function(e) {
+        e.preventDefault(); // Prevents the form from reloading the page.
+        
+        const submitButton = document.getElementById("addTaskBtn");
+        const statusDiv = document.getElementById("status-message");
+
+        submitButton.disabled = true;
+        statusDiv.textContent = "Adding task...";
+        statusDiv.style.color = "black";
+        
+        const formData = {
+          title: document.getElementById("title").value,
+          assignee: document.getElementById("assignee").value,
+          priority: document.getElementById("priority").value,
+          status: document.getElementById("status").value,
+          dueDate: document.getElementById("dueDate").value
+        };
+
+        google.script.run
+          .withSuccessHandler(function(response) {
+            statusDiv.style.color = "green";
+            statusDiv.textContent = response;
+            document.getElementById("task-form").reset(); // Clear the form.
+            submitButton.disabled = false;
+            
+            // Make the success message disappear after 3 seconds.
+            setTimeout(function(){ statusDiv.textContent = ""; }, 3000);
+          })
+          .withFailureHandler(function(error) {
+            statusDiv.style.color = "red";
+            statusDiv.textContent = "Error: " + error.message;
+            submitButton.disabled = false;
+          })
+          .addTask(formData);
+      });
+    </script>
+  </body>
+</html>
